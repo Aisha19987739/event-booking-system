@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/userModel'; // تأكد من المسار الصحيح إلى موديل المستخدم
+import dotenv from 'dotenv';
+import Booking from '@/models/Booking';
+dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || '9sD!a8T$kf@3gR1#qPz^Wm2Uo%XeLb7H'; // تأكد من إعداد هذا في .env
+
+const JWT_SECRET = process.env.JWT_SECRET!; // تأكد من إعداد هذا في .env
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -48,12 +52,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, username } = req.body;  // إضافة username هنا
 
-    // تحقق من وجود المستخدم مسبقًا
+    // تحقق من وجود المستخدم مسبقًا باستخدام البريد الإلكتروني أو الاسم
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       res.status(400).json({ message: 'User already exists' });
+      return;
+    }
+
+    // تحقق من وجود username مستخدم مسبقًا
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      res.status(400).json({ message: 'Username already taken' });
       return;
     }
 
@@ -65,7 +76,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       name,
       email,
       password: hashedPassword,
-      role, // "user" أو "organizer" مثلاً
+      role,
+      username, // إضافة username
     });
 
     await newUser.save();
@@ -85,9 +97,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        username: newUser.username, // إضافة username هنا
       },
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: (err as Error).message });
   }
 };
+
+

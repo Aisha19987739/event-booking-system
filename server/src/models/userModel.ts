@@ -1,9 +1,10 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
 // 1. تحديد الواجهة TypeScript
 export interface IUser extends Document {
   name: string;
   email: string;
+  username: string;  // تأكد من إضافة هذا الحقل
   password: string;
   role: 'user' | 'organizer' | 'admin';
   createdAt: Date;
@@ -22,6 +23,12 @@ const userSchema = new Schema<IUser>({
     required: true,
     unique: true,
     lowercase: true
+  },
+  username: {  // إضافة التحقق من unique و required هنا
+    type: String,
+    required: true,
+    unique: true,  // هذا يجعل الاسم فريدًا
+    trim: true,
   },
   password: {
     type: String,

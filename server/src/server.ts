@@ -1,23 +1,31 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
+import bookingRoutes from './routes/bookingRoutes';
 
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Middlewares
 app.use(express.json());
 
-// Routes
-app.use('/api/auth', authRoutes);
+console.log('🔐 JWT_SECRET:', process.env.JWT_SECRET);
 
 // الاتصال بقاعدة البيانات
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/event-booking')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.log(err));
+connectDB();
 
-// بدء الخادم
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// تعريف المسارات
+app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes); // تأكدي أن الملف موجود ومصنوع بشكل صحيح
+
+// نقطة بداية للتأكد من أن السيرفر شغال
+app.get('/', (_req, res) => {
+  res.send('Server is running');
+});
+
+// تشغيل السيرفر
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
