@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { ExtendedJwtPayload } from '../types/jwt';  // استيراد النوع المخصص
+import { JwtPayload } from 'jsonwebtoken';
+import { AuthenticatedRequest } from '@/types/AuthenticatedRequest';
 
 dotenv.config();
 
@@ -17,32 +19,50 @@ function isValidPayload(decoded: any): decoded is ExtendedJwtPayload {
   );
 }
 
-const authenticateToken = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  const token =
-    req.cookies?.token || req.headers['authorization']?.split(' ')[1];
+const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
 
   if (!token) {
-    res.status(401).json({ message: 'Access denied. No token provided.' });
-    return;
+    return res.status(401).json({ message: 'Access token missing' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
-    if (err || !isValidPayload(decoded)) {
-      res.status(403).json({ message: 'Invalid or expired token.' });
-      return;
+  jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
+    if (err || typeof decoded !== 'object' || !('userId' in decoded) || !('role' in decoded)) {
+      return res.status(403).json({ message: 'Invalid token' });
     }
 
     req.user = {
       userId: decoded.userId,
-      role: decoded.role,
+      role: decoded.role
     };
 
     next();
   });
 };
 
-export default authenticateToken;
+// src/middleware/authMiddleware.ts
+
+
+
+
+// src/middleware/authMiddleware.ts
+
+
+
+
+ export const authorizeRoles = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as JwtPayload & { role?: string };
+
+    if (!user || !roles.includes(user.role || '')) {
+       res.status(403).json({ message: 'Access denied: insufficient role' });
+       return
+    }
+
+    next();
+  };
+};
+
+export default authenticateToken ;
+

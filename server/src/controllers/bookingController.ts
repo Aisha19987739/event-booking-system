@@ -7,6 +7,7 @@ import Booking from '../models/Booking';
 import { ExtendedJwtPayload } from '../types/jwt';  // استيراد النوع المخصص
 import { JwtPayload } from 'jsonwebtoken';
 import Event from '../models/Event'; // استيراد موديل الحدث من الـ MongoDB
+import mongoose from 'mongoose';
 export const getUserBookings = async (req: Request, res: Response): Promise<void> => {
   try {
     // التأكد من أن هناك userId في request
@@ -54,6 +55,11 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
     });
 
     await booking.save();
+    await Event.findByIdAndUpdate(
+  eventId,
+  { $push: { bookings: booking._id } },
+  { new: true }
+);
     res.status(201).json({ message: 'Booking created successfully', booking });
   } catch (error) {
     res.status(500).json({ message: 'Error creating booking', error });
@@ -84,41 +90,6 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({ message: 'Booking cancelled successfully', booking });
   } catch (error) {
     res.status(500).json({ message: 'Error cancelling booking', error });
-  }
-};
-
-export const updateBooking = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { bookingId } = req.params;
-    const { ticketCount, status } = req.body;
-
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      res.status(404).json({ message: 'Booking not found' });
-      return;
-    }
-
-    // تحقق من نوع req.user قبل الوصول إلى userId
-    const user = req.user as JwtPayload;
-
-    if (!user || user.userId !== booking.user.toString()) {
-      res.status(403).json({ message: 'You are not authorized to update this booking' });
-      return;
-    }
-
-    // تحديث الحجز
-    if (ticketCount) {
-      booking.ticketCount = ticketCount;
-    }
-    if (status) {
-      booking.status = status;
-    }
-
-    await booking.save();
-
-    res.status(200).json(booking);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating booking', error });
   }
 };
 
@@ -167,6 +138,8 @@ export const getAllBookings = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Error fetching all bookings', error });
   }
 };
+
+
 export const updateBookingStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { bookingId } = req.params;   // الحصول على bookingId من المعاملات
@@ -204,5 +177,71 @@ export const updateBookingStatus = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: 'Error updating booking status', error });
   }
 };
+
+
+export const updateBooking = async (req: Request, res: Response): Promise<void> => {
+  const user = req.user as JwtPayload & { userId: string; role: string };
+  const { bookingId } = req.params;
+  const { ticketCount, status } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    res.status(400).json({ message: 'Invalid booking ID' });
+    return;
+  }
+
+  try {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+
+    // تحقق من الصلاحيات
+    if (booking.user.toString() !== user.userId && user.role !== 'admin') {
+      res.status(403).json({ message: 'Unauthorized to update this booking' });
+      return;
+    }
+
+    // تحديث البيانات
+    if (ticketCount !== undefined) booking.ticketCount = ticketCount;
+    if (status !== undefined) booking.status = status;
+
+    await booking.save();
+    res.status(200).json({ message: 'Booking updated successfully', booking });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating booking', error });
+  }
+};
+export const deleteBooking = async (req: Request, res: Response): Promise<void> => {
+  const user = req.user as JwtPayload & { userId: string; role: string };
+  const { bookingId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    res.status(400).json({ message: 'Invalid booking ID' });
+    return;
+  }
+
+  try {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+
+    // تحقق من الصلاحيات
+    if (booking.user.toString() !== user.userId && user.role !== 'admin') {
+      res.status(403).json({ message: 'Unauthorized to delete this booking' });
+      return;
+    }
+
+    await booking.deleteOne();
+    res.status(200).json({ message: 'Booking deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting booking', error });
+  }
+};
+
 
 

@@ -6,7 +6,8 @@ import {
   cancelBooking,
   updateBooking,
   getAllBookings,
-  updateBookingStatus
+  updateBookingStatus,
+  deleteBooking
 } from '../controllers/bookingController';
 import  authenticateToken  from '../middleware/authenticateToken';
 
@@ -19,5 +20,6 @@ router.patch('/:bookingId', authenticateToken, updateBooking); // Update a booki
 router.patch('/:bookingId/cancel', authenticateToken, cancelBooking); // Cancel a booking
 router.get('/all', authenticateToken, getAllBookings); // Get all bookings
 router.patch('/:bookingId/status', authenticateToken, updateBookingStatus); // Update booking status (for admin)
+router.delete('/:bookingId', authenticateToken, deleteBooking);
 
 export default router;

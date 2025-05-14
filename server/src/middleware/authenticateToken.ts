@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
+import { AuthenticatedRequest } from '../types/AuthenticatedRequest';
 
 // type guard
 function isValidPayload(
@@ -15,29 +16,28 @@ function isValidPayload(
   );
 }
 
-const authenticateToken = (
+
+export const authenticateToken = (
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  const token =
-    req.cookies?.token || req.headers['authorization']?.split(' ')[1];
-
+  const token = req.headers['authorization']?.split(' ')[1];
   if (!token) {
-    res.status(401).json({ message: 'Access denied. No token provided.' });
+    res.status(401).json({ message: 'Access denied' });
     return;
   }
 
   jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
-    if (err || !isValidPayload(decoded)) {
-      res.status(403).json({ message: 'Invalid or expired token.' });
+    if (err || typeof decoded === 'string' || !decoded) {
+      res.status(403).json({ message: 'Invalid token' });
       return;
     }
 
-    // تأكيد أن decoded يحتوي على userId و role
     req.user = {
-      userId: decoded.userId,
-      role: decoded.role,
+      ...decoded,
+      userId: (decoded as JwtPayload).userId,
+      role: (decoded as JwtPayload).role,
     };
 
     next();

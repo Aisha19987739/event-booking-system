@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import bookingRoutes from './routes/bookingRoutes';
+import eventRoutes from './routes/eventRoutes';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ connectDB();
 // تعريف المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes); // تأكدي أن الملف موجود ومصنوع بشكل صحيح
+app.use('/api/events', eventRoutes); 
 
 // نقطة بداية للتأكد من أن السيرفر شغال
 app.get('/', (_req, res) => {
