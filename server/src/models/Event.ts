@@ -9,12 +9,10 @@ const eventSchema = new mongoose.Schema(
     price: { type: Number, required: false },
     capacity: { type: Number, required: true },
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-   bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }]
-
-
+    bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }],
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: false } // ✅ تمت إضافته
   },
   { timestamps: true }
-  
 );
 
 const Event = mongoose.model('Event', eventSchema);

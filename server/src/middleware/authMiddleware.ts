@@ -19,17 +19,19 @@ function isValidPayload(decoded: any): decoded is ExtendedJwtPayload {
   );
 }
 
-const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ message: 'Access token missing' });
+     res.status(401).json({ message: 'Access token missing' });
+      return;
   }
 
   jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
     if (err || typeof decoded !== 'object' || !('userId' in decoded) || !('role' in decoded)) {
-      return res.status(403).json({ message: 'Invalid token' });
+       res.status(403).json({ message: 'Invalid token' });
+      return;
     }
 
     req.user = {

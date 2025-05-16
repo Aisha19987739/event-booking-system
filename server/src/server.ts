@@ -4,6 +4,9 @@ import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import eventRoutes from './routes/eventRoutes';
+import categoryRoutes from './routes/categoryRoutes';
+import complaintRoutes from './routes/complaintRoutes';
+import { errorHandler } from './middleware/errorMiddleware';
 
 dotenv.config();
 
@@ -21,6 +24,8 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes); // تأكدي أن الملف موجود ومصنوع بشكل صحيح
 app.use('/api/events', eventRoutes); 
+app.use('/api/categories', categoryRoutes);
+app.use('/api/complaints',complaintRoutes); // تأكدي أن الملف موجود ومصنوع بشكل صحيح
 
 // نقطة بداية للتأكد من أن السيرفر شغال
 app.get('/', (_req, res) => {
@@ -31,3 +36,4 @@ app.get('/', (_req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+app.use(errorHandler);

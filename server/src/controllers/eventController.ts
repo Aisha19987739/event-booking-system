@@ -13,22 +13,23 @@ export const createEvent = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const { title, description, date, location, capacity, category } = req.body;
+   const { title, description, date, location, capacity, category } = req.body;
 
-    if (!title || !date || !location || !capacity) {
-      res.status(400).json({ message: 'Missing required event fields' });
-      return;
-    }
+if (!title || !date || !location || !capacity || !category) {
+  res.status(400).json({ message: 'Missing required event fields' });
+  return;
+}
 
-    const newEvent = new Event({
-      title,
-      description,
-      date,
-      location,
-      capacity,
-      category,
-      organizer: user.userId, // Organizer ID from token
-    });
+
+   const newEvent = new Event({
+  title,
+  description,
+  date,
+  location,
+  capacity,
+  category,  // تم إضافته هنا
+  organizer: user.userId,
+});
 
     await newEvent.save();
 
@@ -64,13 +65,16 @@ export const getEventById = async (req: Request, res: Response): Promise<void> =
 
 export const getAllEvents = async (req: Request, res: Response): Promise<void> => {
   try {
-    const events = await Event.find().populate('organizer', 'name email');
+   const events = await Event.find()
+  .populate('organizer', 'name email')
+  .populate('category', 'name');
+
     res.status(200).json(events);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching events', error });
   }
 };
-// controllers/eventController.ts
+
 export const getEventWithBookings = async (req: Request, res: Response): Promise<void> => {
   const user = req.user as JwtPayload & { userId: string; role: string };
 

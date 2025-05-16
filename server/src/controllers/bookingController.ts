@@ -140,45 +140,6 @@ export const getAllBookings = async (req: Request, res: Response): Promise<void>
 };
 
 
-export const updateBookingStatus = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { bookingId } = req.params;   // الحصول على bookingId من المعاملات
-    const { status } = req.body;        // الحصول على الحالة الجديدة (قبول أو رفض)
-
-    // تحقق من أن الحالة هي "accepted" أو "rejected"
-    if (status !== 'accepted' && status !== 'rejected') {
-      res.status(400).json({ message: 'Invalid status. It must be either "accepted" or "rejected".' });
-      return;
-    }
-
-    // العثور على الحجز باستخدام bookingId
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      res.status(404).json({ message: 'Booking not found' });
-      return;
-    }
-
-    // تحقق من أن المستخدم الذي يقوم بقبول أو رفض الحجز هو المنظم الذي يمتلك الحدث
-    const user = req.user as JwtPayload & { userId: string; role: string };
-    const event = await Event.findById(booking.event);  // الحصول على الحدث المرتبط بالحجز
-
-    // إذا كان المنظم ليس هو من يمتلك الحدث
-    if (user.role !== 'Organizer' || event?.organizer.toString() !== user.userId) {
-      res.status(403).json({ message: 'You are not authorized to accept or reject this booking' });
-      return;
-    }
-
-    // تحديث حالة الحجز
-    booking.status = status;
-    await booking.save();
-
-    res.status(200).json({ message: `Booking ${status} successfully`, booking });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating booking status', error });
-  }
-};
-
-
 export const updateBooking = async (req: Request, res: Response): Promise<void> => {
   const user = req.user as JwtPayload & { userId: string; role: string };
   const { bookingId } = req.params;
@@ -240,6 +201,48 @@ export const deleteBooking = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({ message: 'Booking deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting booking', error });
+  }
+};
+export const updateBookingStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['accepted', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      res.status(400).json({ message: 'Invalid status value' });
+      return;
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      res.status(404).json({ message: 'Booking not found' });
+      return;
+    }
+
+    const event = await Event.findById(booking.event);
+    if (!event) {
+      res.status(404).json({ message: 'Event not found' });
+      return;
+    }
+
+    const user = req.user as JwtPayload;
+
+    // التأكد أن المستخدم هو صاحب الحدث
+    if (!user || user.userId !== event.organizer.toString()) {
+      res.status(403).json({ message: 'You are not authorized to update this booking' });
+      return;
+    }
+
+    booking.status = status;
+    await booking.save();
+
+    res.status(200).json({
+      message: 'Booking status updated successfully',
+      booking,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating booking status', error });
   }
 };
 
