@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import mongoose, { Schema, model, Document } from 'mongoose';
 
 // تعريف واجهة الحجز
 interface IBooking extends Document {
@@ -14,7 +14,7 @@ interface IBooking extends Document {
 // تعريف مخطط الحجز
 const BookingSchema = new Schema<IBooking>(
   {
-    event: { type: Schema.Types.ObjectId, ref: 'Event', required: true },
+    event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     status: {
       type: String,

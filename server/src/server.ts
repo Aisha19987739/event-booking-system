@@ -7,6 +7,8 @@ import eventRoutes from './routes/eventRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 import complaintRoutes from './routes/complaintRoutes';
 import { errorHandler } from './middleware/errorMiddleware';
+import reviewRoutes from './routes/reviewRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 dotenv.config();
 
@@ -26,6 +28,9 @@ app.use('/api/bookings', bookingRoutes); // تأكدي أن الملف موجو�
 app.use('/api/events', eventRoutes); 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/complaints',complaintRoutes); // تأكدي أن الملف موجود ومصنوع بشكل صحيح
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
 
 // نقطة بداية للتأكد من أن السيرفر شغال
 app.get('/', (_req, res) => {
