@@ -10,10 +10,15 @@ import {
   deleteBooking
 } from '../controllers/bookingController';
 import  authenticateToken  from '../middleware/authenticateToken';
+import { createBookingValidator } from '../validators/bookingValidator';
+import { validateRequest } from '../middleware/validateRequest';
 
 const router = express.Router();
 
-router.post('/', authenticateToken, createBooking); // Create a new booking
+router.post('/', authenticateToken, 
+   createBookingValidator,
+  validateRequest,
+  createBooking); // Create a new booking
 router.get('/user', authenticateToken, getUserBookings); // Get bookings for a user
 router.get('/organizer', authenticateToken, getOrganizerBookings);  // Get bookings for an organizer
 router.patch('/:bookingId', authenticateToken, updateBooking); // Update a booking

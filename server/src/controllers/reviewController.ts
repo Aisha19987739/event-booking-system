@@ -37,45 +37,63 @@ export const createReview = async (req: Request, res: Response): Promise<void> =
 // 📝 تحديث تقييم
 export const updateReview = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = req.user as JwtPayload & { userId: string };
+    const user = req.user as JwtPayload & { userId: string; role: string };
     const { reviewId } = req.params;
     const { rating, comment } = req.body;
 
-    const review = await Review.findOneAndUpdate(
-      { _id: reviewId, user: user.userId },
-      { rating, comment },
-      { new: true }
-    );
-
+    // جلب المراجعة
+    const review = await Review.findById(reviewId);
     if (!review) {
-      res.status(404).json({ message: 'Review not found or unauthorized' });
+      res.status(404).json({ message: 'Review not found' });
       return;
     }
 
-    res.status(200).json({ message: 'Review updated', review });
+    // تحقق إذا كان المستخدم هو صاحب المراجعة أو مشرف (admin)
+    if (review.user.toString() !== user.userId && user.role !== 'admin') {
+      res.status(403).json({ message: 'Unauthorized to update this review' });
+      return;
+    }
+
+    // تحديث الحقول إذا تم إرسالها
+    if (rating !== undefined) review.rating = rating;
+    if (comment !== undefined) review.comment = comment;
+
+    await review.save();
+
+    res.status(200).json({ message: 'Review updated successfully', review });
   } catch (error) {
-    handleError(res, error, 'Failed to update review');
+    console.error('Error updating review:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 // ❌ حذف تقييم
 export const deleteReview = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = req.user as JwtPayload & { userId: string };
-    const { reviewId } = req.params;
+    const user = req.user as JwtPayload & { userId: string; role: string };
+    const { id: reviewId } = req.params;
 
-    const review = await Review.findOneAndDelete({ _id: reviewId, user: user.userId });
+    const review = await Review.findById(reviewId);
 
     if (!review) {
-      res.status(404).json({ message: 'Review not found or unauthorized' });
+      res.status(404).json({ message: 'Review not found' });
       return;
     }
 
-    res.status(200).json({ message: 'Review deleted' });
+    // السماح فقط لصاحب المراجعة أو المشرف
+    if (user.role !== 'admin' && review.user.toString() !== user.userId) {
+      res.status(403).json({ message: 'Not authorized to delete this review' });
+      return;
+    }
+
+    await review.deleteOne(); // حذف المراجعة فعلياً
+
+    res.status(200).json({ message: 'Review deleted successfully' });
   } catch (error) {
     handleError(res, error, 'Failed to delete review');
   }
 };
+
 
 // 📄 جلب تقييمات حدث
 export const getEventReviews = async (req: Request, res: Response): Promise<void> => {

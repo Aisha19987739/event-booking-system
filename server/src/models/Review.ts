@@ -7,6 +7,7 @@ export interface IReview extends Document {
   comment?: string;
   createdAt: Date;
   updatedAt: Date;
+   status?: 'pending' | 'approved' | 'rejected';
 }
 
 const reviewSchema = new Schema<IReview>(
@@ -31,6 +32,7 @@ const reviewSchema = new Schema<IReview>(
       type: String,
       trim: true,
     },
+     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, 
   },
   { timestamps: true }
 );
