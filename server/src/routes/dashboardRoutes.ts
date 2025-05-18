@@ -3,7 +3,7 @@ import express from 'express';
 import { getUserDashboard } from '../controllers/userDashboardController';
 import  authenticateToken  from '../middleware/authMiddleware';
 import { authorizeRoles } from '../middleware/authMiddleware';
-import { getOrganizerDashboard } from '../controllers/organizerdashboardController';
+import { getOrganizerDashboard } from '../controllers/organizerDashboardController';
 import { getAdminDashboard } from '../controllers/adminDashboardController';
 
 

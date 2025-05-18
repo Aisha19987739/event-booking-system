@@ -1,24 +1,32 @@
 import express from 'express';
-import { createEvent, deleteEvent, getAllEvents, getEventById, getEventWithBookings, updateEvent,  } from '../controllers/eventController';
-import {authenticateToken} from '../middleware/authenticateToken';
-import {authorizeRoles}   from '../middleware/authMiddleware';
+import {
+  createEvent,
+  deleteEvent,
+  getAllEvents,
+  getEventById,
+  getEventWithBookings,
+  updateEvent,
+} from '../controllers/eventController';
+import { authenticateToken } from '../middleware/authenticateToken';
+import { authorizeRoles } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
+// ✅ يدعم البحث + الترتيب + التصفح + الفلاتر
+router.get('/', getAllEvents);
 
-router.get('/', getAllEvents); // Get all events
-router.get('/:eventId', getEventById); // Get event by ID
+// أحداث فردية
+router.get('/:eventId', getEventById);
 router.post('/', authenticateToken, authorizeRoles('organizer'), createEvent);
+router.put('/:eventId', authenticateToken, updateEvent);
+router.delete('/:eventId', authenticateToken, authorizeRoles('organizer'), deleteEvent);
+
+// حجوزات الحدث
 router.get(
   '/:eventId/bookings',
   authenticateToken,
   authorizeRoles('organizer'),
   getEventWithBookings
 );
-router.put('/:eventId', authenticateToken, updateEvent);
-router.delete('/:eventId', authenticateToken, deleteEvent);
-
-
-
 
 export default router;

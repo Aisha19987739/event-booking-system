@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+
 import Event from '../models/Event';
 import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
@@ -63,17 +63,67 @@ export const getEventById = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const getAllEvents = async (req: Request, res: Response): Promise<void> => {
-  try {
-   const events = await Event.find()
-  .populate('organizer', 'name email')
-  .populate('category', 'name');
+import { Request, Response } from 'express';
 
-    res.status(200).json(events);
+
+
+export const getAllEvents = async (req: Request, res: Response) => {
+  try {
+    const {
+      search,
+      category,
+      location,
+      sortBy = 'createdAt',
+      order = 'desc',
+      page = '1',
+      limit = '10',
+    } = req.query;
+
+    const filters: any = {};
+
+    if (search && typeof search === 'string') {
+      filters.title = { $regex: search, $options: 'i' };
+    }
+
+    if (category && typeof category === 'string' && mongoose.Types.ObjectId.isValid(category)) {
+  filters.category = category;
+}
+
+
+    if (location && typeof location === 'string') {
+      filters.location = { $regex: location, $options: 'i' };
+    }
+
+    const pageNumber = parseInt(page as string, 10) || 1;
+    const pageSize = parseInt(limit as string, 10) || 10;
+    const skip = (pageNumber - 1) * pageSize;
+
+    const sort: any = {
+      [sortBy as string]: order === 'asc' ? 1 : -1,
+    };
+
+    const totalEvents = await Event.countDocuments(filters);
+
+    const events = await Event.find(filters)
+      .sort(sort)
+      .skip(skip)
+      .limit(pageSize)
+      .populate('organizer', 'name email')
+      .populate('category', 'name');
+
+    res.status(200).json({
+      total: totalEvents,
+      page: pageNumber,
+      limit: pageSize,
+      events,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching events', error });
+    console.error('Error in getAllEvents:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
+
+
 
 export const getEventWithBookings = async (req: Request, res: Response): Promise<void> => {
   const user = req.user as JwtPayload & { userId: string; role: string };
@@ -185,5 +235,8 @@ export const deleteEvent = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ message: 'Server error', error });
   }
 };
+
+
+
 
 
