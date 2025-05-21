@@ -1,25 +1,34 @@
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
+// ✅ إنشاء حدث جديد
 export const createEventValidator = [
-  body('title')
-    .notEmpty().withMessage('Title is required')
-    .isLength({ min: 3 }).withMessage('Title must be at least 3 characters'),
+  body('title').notEmpty().withMessage('Event title is required'),
+  body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
+  body('category').notEmpty().withMessage('Category is required'),
+  body('location').notEmpty().withMessage('Location is required'),
+  body('date').isISO8601().withMessage('Invalid date format'),
+  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
+  body('totalTickets').isInt({ min: 1 }).withMessage('Total tickets must be at least 1'),
+];
 
-  body('description')
-    .notEmpty().withMessage('Description is required'),
+// ✅ تحديث حدث (للمستقبل، إن كان هناك دعم لتحديث الحدث نفسه)
+export const updateEventValidator = [
+  param('eventId').isMongoId().withMessage('Invalid event ID'),
+  body('title').optional().notEmpty().withMessage('Title cannot be empty'),
+  body('description').optional().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
+  body('category').optional().notEmpty().withMessage('Category cannot be empty'),
+  body('location').optional().notEmpty().withMessage('Location cannot be empty'),
+  body('date').optional().isISO8601().withMessage('Invalid date'),
+  body('price').optional().isFloat({ min: 0 }).withMessage('Price must be positive'),
+  body('totalTickets').optional().isInt({ min: 1 }).withMessage('Total tickets must be at least 1'),
+];
 
-  body('date')
-    .notEmpty().withMessage('Date is required')
-    .isISO8601().withMessage('Date must be a valid ISO8601 date'),
+// ✅ حذف حدث
+export const deleteEventValidator = [
+  param('eventId').isMongoId().withMessage('Invalid event ID'),
+];
 
-  body('location')
-    .notEmpty().withMessage('Location is required'),
-
-  body('capacity')
-    .notEmpty().withMessage('Capacity is required')
-    .isInt({ min: 1 }).withMessage('Capacity must be a positive integer'),
-
-  body('category')
-    .notEmpty().withMessage('Category is required')
-    .isMongoId().withMessage('Invalid category ID'),
+// ✅ الحصول على حجوزات الحدث
+export const getEventBookingsValidator = [
+  param('eventId').isMongoId().withMessage('Invalid event ID'),
 ];

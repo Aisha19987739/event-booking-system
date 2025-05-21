@@ -8,26 +8,26 @@ import { ExtendedJwtPayload } from '../types/jwt';  // استيراد النوع
 import { JwtPayload } from 'jsonwebtoken';
 import Event from '../models/Event'; // استيراد موديل الحدث من الـ MongoDB
 import mongoose from 'mongoose';
+function isValidUser(user: any): user is JwtPayload & { userId: string; role: string } {
+  return user && typeof user === 'object' && 'userId' in user && 'role' in user;
+}
+
 export const getUserBookings = async (req: Request, res: Response): Promise<void> => {
   try {
-    // التأكد من أن هناك userId في request
-    const userId = (req.user as JwtPayload & { userId: string }).userId;  // التأكد من أن req.user هو من النوع الصحيح
-
-    if (!userId) {
-      res.status(400).json({ message: 'User not authenticated' });
+    if (!isValidUser(req.user)) {
+      res.status(401).json({ message: 'User not authenticated' });
       return;
     }
 
-    // استرجاع جميع الحجوزات الخاصة بالمستخدم من قاعدة البيانات
+    const userId = req.user.userId;
+
     const bookings = await Booking.find({ user: userId });
 
-    // إذا لم يكن هناك حجوزات
     if (bookings.length === 0) {
       res.status(404).json({ message: 'No bookings found for this user' });
       return;
     }
 
-    // إرجاع الحجوزات
     res.status(200).json(bookings);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching bookings', error });
@@ -35,17 +35,23 @@ export const getUserBookings = async (req: Request, res: Response): Promise<void
 };
 
 
-
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
+    console.log('CreateBooking payload:', req.body);
+
   try {
-    const { eventId, userId, ticketCount, status, bookingDate } = req.body;
+    if (!isValidUser(req.user)) {
+      res.status(401).json({ message: 'User not authenticated' });
+      return;
+    }
+
+    const { eventId, ticketCount, status, bookingDate } = req.body;
+    const userId = req.user.userId;
 
     if (!eventId || !userId || !ticketCount) {
       res.status(400).json({ message: 'Event ID, User ID, and Ticket Count are required' });
       return;
     }
 
-    // إنشاء حجز جديد
     const booking = new Booking({
       event: eventId,
       user: userId,
@@ -55,16 +61,25 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
     });
 
     await booking.save();
+
     await Event.findByIdAndUpdate(
-  eventId,
-  { $push: { bookings: booking._id } },
-  { new: true }
-);
+      eventId,
+      { $push: { bookings: booking._id } },
+      { new: true }
+    );
+
+    console.log('✅ Booking saved:', booking);
+
     res.status(201).json({ message: 'Booking created successfully', booking });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating booking', error });
+    console.error('❌ Error creating booking:', error);
+    res.status(500).json({
+      message: 'Error creating booking',
+      error: error instanceof Error ? error.message : error,
+    });
   }
 };
+
   export const cancelBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const { bookingId } = req.params; // الحصول على bookingId من المعاملات
@@ -175,7 +190,7 @@ export const updateBooking = async (req: Request, res: Response): Promise<void> 
   }
 };
 export const deleteBooking = async (req: Request, res: Response): Promise<void> => {
-  const user = req.user as JwtPayload & { userId: string; role: string };
+  const user = req.user! as JwtPayload & { userId: string; role: string };
   const { bookingId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/userModel'; // تأكد من المسار الصحيح إلى موديل المستخدم
 import dotenv from 'dotenv';
-import Booking from '@/models/Booking';
+import Booking from '../models/Booking';
 dotenv.config();
 
 

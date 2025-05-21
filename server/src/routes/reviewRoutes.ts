@@ -27,9 +27,15 @@ router.post(
 
 // ✏️ المستخدم يعدل مراجعته
 
-router.put('/:reviewId', authenticateToken, updateReviewValidator, validateRequest, updateReview);
 
-
+router.put(
+  '/:id',
+  authenticateToken,
+  authorizeRoles('user'),
+  updateReviewValidator,
+  validateRequest,
+  updateReview
+);
 // ❌ المستخدم يحذف مراجعته
 router.delete(
   '/:id',

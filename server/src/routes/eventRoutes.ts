@@ -9,44 +9,57 @@ import {
 } from '../controllers/eventController';
 import { authenticateToken } from '../middleware/authenticateToken';
 import { authorizeRoles } from '../middleware/authMiddleware';
-import { createEventValidator } from '../validators/eventValidator';
 import { validateRequest } from '../middleware/validateRequest';
-import { updateReviewValidator } from '../validators/reviewValidators';
-import { updateReview } from '../controllers/reviewController';
+import {
+  createEventValidator,
+  updateEventValidator,
+  deleteEventValidator,
+  getEventBookingsValidator,
+} from '../validators/eventValidator';
 
 const router = express.Router();
 
-// ✅ يدعم البحث + الترتيب + التصفح + الفلاتر
+// جلب كل الفعاليات مع دعم الفلاتر، التصفح والترتيب
 router.get('/', getAllEvents);
 
-// أحداث فردية
+// جلب فعالية واحدة بالـ ID
 router.get('/:eventId', getEventById);
+
+// إنشاء فعالية (منظم فقط)
 router.post(
   '/',
-  authenticateToken, // إن كنت تتطلب التحقق من التوكن
-  authorizeRoles('organizer'), // إن كانت الصلاحية مطلوبة
+  authenticateToken,
+  authorizeRoles('organizer'),
   createEventValidator,
   validateRequest,
   createEvent
 );
+
+// تعديل فعالية (منظم فقط)
 router.put(
   '/:id',
   authenticateToken,
-  authorizeRoles('user'),
-  updateReviewValidator,
-  validateRequest,
-  updateReview
+  authorizeRoles('organizer'),
+  updateEvent,
+  updateEventValidator
 );
 
-router.delete('/:eventId', authenticateToken, authorizeRoles('organizer'), deleteEvent);
+// حذف فعالية (منظم فقط)
+router.delete(
+  '/:eventId',
+  authenticateToken,
+  authorizeRoles('organizer'),
+  deleteEvent,
+  deleteEventValidator
+);
 
-// حجوزات الحدث
+// جلب الحجوزات المرتبطة بفعالية (منظم فقط)
 router.get(
   '/:eventId/bookings',
   authenticateToken,
   authorizeRoles('organizer'),
-  getEventWithBookings
+  getEventWithBookings,
+  getEventBookingsValidator
 );
-
 
 export default router;

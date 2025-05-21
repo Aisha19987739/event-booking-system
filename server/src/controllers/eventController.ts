@@ -2,41 +2,47 @@
 import Event from '../models/Event';
 import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
-import { AuthenticatedRequest } from '@/types/AuthenticatedRequest';
+import { AuthenticatedRequest } from '../types/AuthenticatedRequest';
 
-export const createEvent = async (req: Request, res: Response): Promise<void> => {
+
+export const createEvent = async (req, res) => {
   try {
-    const user = req.user as JwtPayload & { userId: string; role: string };
+    const { title, description, date, location, price, capacity, category } = req.body;
 
-    if (user.role !== 'organizer') {
-      res.status(403).json({ message: 'Only organizers can create events' });
-      return;
+    if (!mongoose.Types.ObjectId.isValid(category)) {
+      return res.status(400).json({ message: 'معرف الفئة (category) غير صالح' });
+    } 
+  const organizer = req.user?.userId; // ✅ الاعتماد على JWT
+  const role = req.user?.role;
+
+    if (!mongoose.Types.ObjectId.isValid(organizer)) {
+      return res.status(400).json({ message: 'معرف المنظم (organizer) غير صالح' });
     }
 
-   const { title, description, date, location, capacity, category } = req.body;
-
-if (!title || !date || !location || !capacity || !category) {
-  res.status(400).json({ message: 'Missing required event fields' });
-  return;
-}
-
-
-   const newEvent = new Event({
-  title,
-  description,
-  date,
-  location,
-  capacity,
-  category,  // تم إضافته هنا
-  organizer: user.userId,
-});
+    const newEvent = new Event({
+      title,
+      description,
+      date,
+      location,
+      price,
+      capacity,
+      category,
+      organizer,
+    });
 
     await newEvent.save();
 
-    res.status(201).json({ message: 'Event created successfully', event: newEvent });
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating event', error });
+    res.status(201).json({ message: 'تم إنشاء الحدث بنجاح', event: newEvent });
+  } 
+  catch (error: unknown) {
+  if (error instanceof Error) {
+    console.error('❌ خطأ أثناء إنشاء الحدث:', error.message);
+    res.status(500).json({ message: 'حدث خطأ أثناء إنشاء الحدث', error: error.message });
+  } else {
+    console.error('❌ خطأ غير معروف أثناء إنشاء الحدث:', error);
+    res.status(500).json({ message: 'حدث خطأ غير معروف أثناء إنشاء الحدث' });
   }
+}
 };
 
  // تأكد من أنك استوردته في الأعلى
@@ -167,7 +173,8 @@ export const getEventWithBookings = async (req: Request, res: Response): Promise
 
 export const updateEvent = async (req: Request, res: Response): Promise<void> => {
   const user = req.user as JwtPayload & { userId: string; role: string };
-  const { eventId } = req.params;
+const eventId = req.params.id;
+
 
   if (!mongoose.Types.ObjectId.isValid(eventId)) {
     res.status(400).json({ message: 'Invalid Event ID' });

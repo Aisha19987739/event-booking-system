@@ -19,6 +19,7 @@ function isValidPayload(decoded: any): decoded is ExtendedJwtPayload {
   );
 }
 
+
 const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(' ')[1];
@@ -29,10 +30,10 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   }
 
   jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
-    if (err || typeof decoded !== 'object' || !('userId' in decoded) || !('role' in decoded)) {
-       res.status(403).json({ message: 'Invalid token' });
-      return;
-    }
+    if (err || !isValidPayload(decoded)) {
+  res.status(403).json({ message: 'Invalid token' });
+  return;
+}
 
     req.user = {
       userId: decoded.userId,
@@ -43,12 +44,7 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
-// src/middleware/authMiddleware.ts
 
-
-
-
-// src/middleware/authMiddleware.ts
 
 
 
