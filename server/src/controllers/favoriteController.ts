@@ -3,6 +3,13 @@ import { Request, Response } from 'express';
 import Favorite from '../models/favorite';
 
 export const addFavorite = async (req: Request, res: Response) => {
+    if (!req.user || typeof req.user === 'string' || !req.user.userId) {
+   res.status(401).json({ message: 'Unauthorized' });
+    return;
+}
+
+
+
   const { eventId } = req.body;
   const userId = req.user!.userId;
 
@@ -15,6 +22,14 @@ export const addFavorite = async (req: Request, res: Response) => {
 };
 
 export const removeFavorite = async (req: Request, res: Response) => {
+    if (!req.user || typeof req.user === 'string' || !req.user.userId) {
+   res.status(401).json({ message: 'Unauthorized' });
+    return;
+}
+
+
+
+    
   const { eventId } = req.params;
   const userId = req.user!.userId;
 
@@ -23,7 +38,14 @@ export const removeFavorite = async (req: Request, res: Response) => {
 };
 
 export const getUserFavorites = async (req: Request, res: Response) => {
-  const userId = req.user!.userId;
+    if (!req.user || typeof req.user === 'string' || !req.user.userId) {
+   res.status(401).json({ message: 'Unauthorized' });
+    return;
+}
+
+const userId = req.user.userId;
+
+  
 
   const favorites = await Favorite.find({ user: userId }).populate('event');
   res.status(200).json(favorites.map(fav => fav.event));

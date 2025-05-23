@@ -1,9 +1,13 @@
 import { JwtPayload } from 'jsonwebtoken';
+interface JwtUserPayload extends JwtPayload {
+  userId: string;
+  role: string;
+}
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload & { userId: string; role: string }; // نضيف userId و role إلى JwtPayload
+      user?: JwtUserPayload; 
     }
   }
 }

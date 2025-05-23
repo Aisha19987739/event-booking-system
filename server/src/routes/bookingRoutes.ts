@@ -12,6 +12,7 @@ import {
 import  authenticateToken  from '../middleware/authenticateToken';
 import { createBookingValidator } from '../validators/bookingValidator';
 import { validateRequest } from '../middleware/validateRequest';
+import { authorizeRoles } from '@/middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -26,6 +27,6 @@ router.patch('/:bookingId/cancel', authenticateToken, cancelBooking); // Cancel 
 router.get('/all', authenticateToken, getAllBookings); // Get all bookings
 router.patch('/:bookingId/status', authenticateToken, updateBookingStatus); // Update booking status (for admin)
 router.delete('/:bookingId', authenticateToken, deleteBooking);
-router.patch('/:bookingId/status', authenticateToken, updateBookingStatus);
+
 
 export default router;
