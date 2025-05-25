@@ -14,11 +14,16 @@ import cors from 'cors';
 
 
 dotenv.config();
-
 const app = express();
+// السماح لـ frontend على هذا origin فقط
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true, // إذا كنت تستخدم ملفات تعريف الارتباط (Cookies)
+}));
 
+app.use(express.json());
 
-
+// ... بقية الـ middleware والروترات
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);

@@ -10,8 +10,10 @@ const eventSchema = new mongoose.Schema(
     capacity: { type: Number, required: true },
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }],
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: false }
-     // ✅ تمت إضافته
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: false },
+
+    // ✅ الحقل المطلوب لربط Firebase Image URL
+    imageUrl: { type: String, required: true },
   },
   { timestamps: true }
 );
