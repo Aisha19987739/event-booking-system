@@ -4,19 +4,45 @@ import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { AuthenticatedRequest } from '../types/AuthenticatedRequest';
 
+import { Request, Response } from 'express';
 
-export const createEvent = async (req, res) => {
+import { uploadImageToBunny } from '../middleware/uploadMiddleware';
+
+import axios from "axios";
+
+
+ export const createEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { title, description, date, location, price, capacity, category } = req.body;
+    const organizer = (req as any).user?.userId;
+
+    if (!title || !date || !category) {
+      res.status(400).json({ message: "الرجاء ملء الحقول المطلوبة (العنوان، التاريخ، الفئة)" });
+      return;
+    }
 
     if (!mongoose.Types.ObjectId.isValid(category)) {
-      return res.status(400).json({ message: 'معرف الفئة (category) غير صالح' });
-    } 
-  const organizer = req.user?.userId; // ✅ الاعتماد على JWT
-  const role = req.user?.role;
+      res.status(400).json({ message: "معرف الفئة (category) غير صالح" });
+      return;
+    }
 
     if (!mongoose.Types.ObjectId.isValid(organizer)) {
-      return res.status(400).json({ message: 'معرف المنظم (organizer) غير صالح' });
+      res.status(400).json({ message: "معرف المنظم (organizer) غير صالح" });
+      return;
+    }
+
+    let imageUrl = "";
+
+     if (req.file) {
+      try {
+        console.log("⏳ Starting image upload...");
+        imageUrl = await uploadImageToBunny(req.file);
+        console.log("🖼️ Image uploaded successfully:", imageUrl);
+      } catch (uploadError: any) {
+        console.error("❌ فشل رفع الصورة إلى BunnyCDN:", uploadError.message);
+        res.status(500).json({ message: "فشل رفع الصورة إلى BunnyCDN", error: uploadError.message });
+        return;
+      }
     }
 
     const newEvent = new Event({
@@ -28,22 +54,18 @@ export const createEvent = async (req, res) => {
       capacity,
       category,
       organizer,
+      image: imageUrl,
     });
 
     await newEvent.save();
 
-    res.status(201).json({ message: 'تم إنشاء الحدث بنجاح', event: newEvent });
-  } 
-  catch (error: unknown) {
-  if (error instanceof Error) {
-    console.error('❌ خطأ أثناء إنشاء الحدث:', error.message);
-    res.status(500).json({ message: 'حدث خطأ أثناء إنشاء الحدث', error: error.message });
-  } else {
-    console.error('❌ خطأ غير معروف أثناء إنشاء الحدث:', error);
-    res.status(500).json({ message: 'حدث خطأ غير معروف أثناء إنشاء الحدث' });
+    res.status(201).json({ message: "تم إنشاء الحدث بنجاح", event: newEvent });
+  } catch (error: any) {
+    console.error("❌ خطأ أثناء إنشاء الحدث:", error.message);
+    res.status(500).json({ message: "حدث خطأ أثناء إنشاء الحدث", error: error.message });
   }
-}
 };
+
 
  // تأكد من أنك استوردته في الأعلى
 
@@ -69,7 +91,6 @@ export const getEventById = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-import { Request, Response } from 'express';
 
 
 
@@ -171,42 +192,83 @@ export const getEventWithBookings = async (req: Request, res: Response): Promise
   }
 };
 
-export const updateEvent = async (req: Request, res: Response): Promise<void> => {
-  const user = req.user as JwtPayload & { userId: string; role: string };
-const eventId = req.params.id;
 
-
-  if (!mongoose.Types.ObjectId.isValid(eventId)) {
-    res.status(400).json({ message: 'Invalid Event ID' });
-    return;
-  }
-
+export const updateEvent = async (req: Request, res: Response) => {
   try {
-    const event = await Event.findById(eventId);
+    const { id } = req.params;
+    const { title, description, date, location, price, capacity, category } = req.body;
 
-    if (!event) {
-      res.status(404).json({ message: 'Event not found' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+       res.status(400).json({ message: "معرف الحدث غير صالح" });
       return;
     }
 
-    if (user.role !== 'organizer' || event.organizer.toString() !== user.userId) {
-      res.status(403).json({ message: 'Access denied: insufficient role or not the owner' });
+    if (category && !mongoose.Types.ObjectId.isValid(category)) {
+       res.status(400).json({ message: "معرف الفئة غير صالح" });
+
+    }
+
+    const existingEvent = await Event.findById(id);
+    if (!existingEvent) {
+       res.status(404).json({ message: "الحدث غير موجود" });
       return;
     }
 
-    // check if the event has bookings
-    if (event.bookings && event.bookings.length > 0) {
-      res.status(400).json({ message: 'Cannot update event with existing bookings' });
-      return;
+    let imageUrl = existingEvent.image;
+
+    if (req.file) {
+      // ✅ حذف الصورة القديمة من BunnyCDN إذا كانت موجودة
+      if (existingEvent.image && existingEvent.image.startsWith(process.env.BUNNY_CDN_BASE_URL!)) {
+        const oldFilePath = existingEvent.image.replace(`${process.env.BUNNY_CDN_BASE_URL}/`, '');
+        try {
+          await axios.delete(
+            `https://${process.env.BUNNY_STORAGE_REGION}.storage.bunnycdn.com/${process.env.BUNNY_STORAGE_NAME}/${oldFilePath}`,
+            {
+              headers: {
+                AccessKey: process.env.BUNNY_STORAGE_PASSWORD!,
+              },
+            }
+          );
+          console.log("✅ تم حذف الصورة القديمة من BunnyCDN");
+        } catch (deleteErr: any) {
+          console.warn("⚠️ لم يتم حذف الصورة القديمة من BunnyCDN:", deleteErr.message);
+        }
+      }
+
+      // ✅ رفع الصورة الجديدة
+      const file = req.file;
+      const filePath = `events/${Date.now()}-${file.originalname}`;
+      const uploadUrl = `https://${process.env.BUNNY_STORAGE_REGION}.storage.bunnycdn.com/${process.env.BUNNY_STORAGE_NAME}/${filePath}`;
+
+      await axios.put(uploadUrl, file.buffer, {
+        headers: {
+          AccessKey: process.env.BUNNY_STORAGE_PASSWORD!,
+          "Content-Type": file.mimetype,
+        },
+      });
+
+      imageUrl = `${process.env.BUNNY_CDN_BASE_URL}/${filePath}`;
     }
 
-    // update fields
-    const updated = await Event.findByIdAndUpdate(eventId, req.body, { new: true });
-    res.status(200).json({ message: 'Event updated', event: updated });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    // ✅ تحديث الحقول
+    existingEvent.title = title || existingEvent.title;
+    existingEvent.description = description || existingEvent.description;
+    existingEvent.date = date || existingEvent.date;
+    existingEvent.location = location || existingEvent.location;
+    existingEvent.price = price ?? existingEvent.price;
+    existingEvent.capacity = capacity ?? existingEvent.capacity;
+    existingEvent.category = category || existingEvent.category;
+    existingEvent.image = imageUrl;
+
+    await existingEvent.save();
+
+    res.status(200).json({ message: "تم تحديث الحدث بنجاح", event: existingEvent });
+  } catch (error: any) {
+    console.error("❌ خطأ أثناء تحديث الحدث:", error.message);
+    res.status(500).json({ message: "حدث خطأ أثناء تحديث الحدث", error: error.message });
   }
 };
+
 
 
 export const deleteEvent = async (req: Request, res: Response): Promise<void> => {
@@ -214,7 +276,7 @@ export const deleteEvent = async (req: Request, res: Response): Promise<void> =>
   const { eventId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(eventId)) {
-    res.status(400).json({ message: 'Invalid Event ID' });
+    res.status(400).json({ message: 'معرف الحدث غير صالح' });
     return;
   }
 
@@ -222,26 +284,48 @@ export const deleteEvent = async (req: Request, res: Response): Promise<void> =>
     const event = await Event.findById(eventId);
 
     if (!event) {
-      res.status(404).json({ message: 'Event not found' });
+      res.status(404).json({ message: 'الحدث غير موجود' });
       return;
     }
 
     if (user.role !== 'organizer' || event.organizer.toString() !== user.userId) {
-      res.status(403).json({ message: 'Access denied: insufficient role or not the owner' });
+      res.status(403).json({ message: 'غير مصرح لك بحذف هذا الحدث' });
       return;
     }
 
     if (event.bookings && event.bookings.length > 0) {
-      res.status(400).json({ message: 'Cannot delete event with existing bookings' });
+      res.status(400).json({ message: 'لا يمكن حذف حدث يحتوي على حجوزات' });
       return;
     }
 
+    // ✅ حذف صورة الحدث من BunnyCDN إذا كانت موجودة
+    if (event.image && event.image.startsWith(process.env.BUNNY_CDN_BASE_URL!)) {
+      const filePath = event.image.replace(`${process.env.BUNNY_CDN_BASE_URL}/`, '');
+      try {
+        await axios.delete(
+          `https://${process.env.BUNNY_STORAGE_REGION}.storage.bunnycdn.com/${process.env.BUNNY_STORAGE_NAME}/${filePath}`,
+          {
+            headers: {
+              AccessKey: process.env.BUNNY_STORAGE_PASSWORD!,
+            },
+          }
+        );
+        console.log('✅ تم حذف الصورة من BunnyCDN');
+      } catch (deleteErr: any) {
+        console.warn('⚠️ لم يتم حذف الصورة من BunnyCDN:', deleteErr.message);
+      }
+    }
+
+    // ✅ حذف الحدث من قاعدة البيانات
     await event.deleteOne();
-    res.status(200).json({ message: 'Event deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+
+    res.status(200).json({ message: 'تم حذف الحدث بنجاح' });
+  } catch (error: any) {
+    console.error('❌ خطأ أثناء حذف الحدث:', error.message);
+    res.status(500).json({ message: 'حدث خطأ أثناء حذف الحدث', error: error.message });
   }
 };
+
 
 
 

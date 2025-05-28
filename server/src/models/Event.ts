@@ -13,7 +13,8 @@ const eventSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: false },
 
     // ✅ الحقل المطلوب لربط Firebase Image URL
-    imageUrl: { type: String, required: true },
+   image: { type: String, required: false },
+
   },
   { timestamps: true }
 );

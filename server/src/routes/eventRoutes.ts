@@ -16,6 +16,7 @@ import {
   deleteEventValidator,
   getEventBookingsValidator,
 } from '../validators/eventValidator';
+import {upload} from "../middleware/multer";
 
 const router = express.Router();
 
@@ -28,12 +29,18 @@ router.get('/:eventId', getEventById);
 // إنشاء فعالية (منظم فقط)
 router.post(
   '/',
-  authenticateToken,
-  authorizeRoles('organizer'),
-  createEventValidator,
+  authenticateToken,          // تحقق من توكن المستخدم أولاً
+  authorizeRoles('organizer'), // تحقق من صلاحية المستخدم
+  upload.single('image'),     // تحليل ملف الصورة بعد التحقق
+  createEventValidator,       // تحقق من صحة البيانات
   validateRequest,
-  createEvent
+  createEvent                 // الدالة التي تنشئ الحدث
 );
+
+
+
+
+
 
 // تعديل فعالية (منظم فقط)
 router.put(
@@ -41,6 +48,7 @@ router.put(
   authenticateToken,
   authorizeRoles('organizer'),
   updateEvent,
+  upload.single('image'),
   updateEventValidator
 );
 

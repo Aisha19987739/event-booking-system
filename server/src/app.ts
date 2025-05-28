@@ -1,6 +1,6 @@
 // src/app.ts
 import express from 'express';
-import dotenv from 'dotenv';
+
 import connectDB from './config/db';
 import authRoutes from './routes/authRoutes';
 import bookingRoutes from './routes/bookingRoutes';
@@ -12,6 +12,8 @@ import reviewRoutes from './routes/reviewRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import cors from 'cors';
 
+const dotenv = require('dotenv');
+dotenv.config();
 
 dotenv.config();
 const app = express();
@@ -22,6 +24,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
 
 // ... بقية الـ middleware والروترات
 

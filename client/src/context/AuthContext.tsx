@@ -1,38 +1,53 @@
-import { createContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import type { User } from '../types/Auth';
+import React, { createContext, useState, useEffect } from 'react';
+import {jwtDecode} from 'jwt-decode';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (userData: User) => void;
+  login: (userData: User, token: string) => void;
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
+  // محاولة استعادة المستخدم من التوكن
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<User>(token);
+        setUser(decoded);
+      } catch (error) {
+        console.error('فشل في فك التوكن:', error);
+        localStorage.removeItem('token');
+      }
+    }
   }, []);
 
-  const login = (userData: User) => {
+  const login = (userData: User, token: string) => {
+    localStorage.setItem('token', token);
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
-    localStorage.removeItem('user');
   };
 
-  const isAuthenticated = Boolean(user);
+  const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

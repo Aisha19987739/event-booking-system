@@ -1,15 +1,18 @@
 import { body, param } from 'express-validator';
 
 // ✅ إنشاء حدث جديد
+
+
 export const createEventValidator = [
   body('title').notEmpty().withMessage('Event title is required'),
   body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
   body('category').notEmpty().withMessage('Category is required'),
   body('location').notEmpty().withMessage('Location is required'),
   body('date').isISO8601().withMessage('Invalid date format'),
-  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('totalTickets').isInt({ min: 1 }).withMessage('Total tickets must be at least 1'),
+  body('price').optional().isFloat({ gt: 0 }).withMessage('Price must be a positive number'),
+  body('capacity').isInt({ min: 1 }).withMessage('capacity must be at least 1'),
 ];
+
 
 // ✅ تحديث حدث (للمستقبل، إن كان هناك دعم لتحديث الحدث نفسه)
 export const updateEventValidator = [
