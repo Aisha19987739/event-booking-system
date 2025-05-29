@@ -4,6 +4,7 @@ import { Grid, Card, CardMedia, CardContent, Typography } from '@mui/material';
 
 const EventsPage = () => {
   const { events, loading } = useEvents();
+  
 
   if (loading) return <Typography>جاري تحميل الفعاليات...</Typography>;
   if (events.length === 0) return <Typography>لا توجد فعاليات حالياً</Typography>;
@@ -13,12 +14,15 @@ const EventsPage = () => {
       {events.map((event) => (
         <Grid item xs={12} sm={6} md={4} key={event._id}>
  <Card>
-  <CardMedia
-    component="img"
-    height="160"
-    image={event.imageUrl || 'https://via.placeholder.com/400x160'}
-    alt={event.title}
-  />
+ 
+
+ <CardMedia
+  component="img"
+  height="160"
+  image={event.imageUrl || 'https://event-image1.b-cdn.net/fallbacks/no-image.jpg'}
+  alt={event.title}
+/>
+
   <CardContent>
     <Typography variant="h6" gutterBottom>{event.title}</Typography>
     <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -40,6 +44,8 @@ const EventsPage = () => {
       ))}
     </Grid>
   );
+  
 };
+
 
 export default EventsPage;
