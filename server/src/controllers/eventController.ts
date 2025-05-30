@@ -10,6 +10,7 @@ import { uploadImageToBunny } from '../middleware/uploadMiddleware'; // تأكد
 
 import axios from "axios";
 import {  formatEventsWithImageUrl } from '../utils/formatEvent'; // تأكد من أن هذا المسار ص
+import Category from '../models/Category';
 
 
  export const createEvent = async (req: Request, res: Response): Promise<void> => {
@@ -102,12 +103,19 @@ import {  formatEventsWithImageUrl } from '../utils/formatEvent'; // تأكد م
 //   }
 // };
 export const getEventById = async (req: Request, res: Response) => {
+  const mongoose = require('mongoose');
+
+console.log(mongoose.Types.ObjectId.isValid('6838b2bcaf6974ae6fb62375')); 
+
+
   try {
     const { id } = req.params;
+    console.log("Event ID type:", typeof id, "value:", id);
+// هل ترجع true أم false؟
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-       res.status(400).json({ message: "معرف الحدث غير صالح" });
-      return;
+        res.status(400).json({ message: "معرف الحدث غير صالح" });
+        return;
     }
 
     const event = await Event.findById(id)
@@ -116,8 +124,8 @@ export const getEventById = async (req: Request, res: Response) => {
       .lean();
 
     if (!event) {
-       res.status(404).json({ message: "الحدث غير موجود" });
-      return;
+        res.status(404).json({ message: "الحدث غير موجود" });
+        return;
     }
 
     const cdnBaseUrl = 'https://event-image1.b-cdn.net';
@@ -152,17 +160,31 @@ export const getAllEvents = async (req: Request, res: Response) => {
 
     const filters: any = {};
 
+    // فلترة العنوان بالبحث النصي
     if (search && typeof search === 'string') {
       filters.title = { $regex: search, $options: 'i' };
     }
 
-    if (category && typeof category === 'string' && mongoose.Types.ObjectId.isValid(category)) {
-      filters.category = category;
+  if (category && typeof category === 'string') {
+  if (mongoose.Types.ObjectId.isValid(category)) {
+    filters.category = category;
+  } else {
+    // البحث باسم الفئة
+    const foundCategory = await Category.findOne({ name: { $regex: category, $options: 'i' } });
+    if (foundCategory) {
+      filters.category = foundCategory._id;
     }
+  }
+}
 
+
+    // فلترة الموقع بنص
     if (location && typeof location === 'string') {
       filters.location = { $regex: location, $options: 'i' };
     }
+
+    // طباعة الفلاتر لتتبع الأخطاء
+    console.log('Filters applied:', filters);
 
     const pageNumber = parseInt(page as string, 10) || 1;
     const pageSize = parseInt(limit as string, 10) || 10;
@@ -174,7 +196,6 @@ export const getAllEvents = async (req: Request, res: Response) => {
 
     const totalEvents = await Event.countDocuments(filters);
 
-    // استخدم lean لتحصل على plain objects
     const events = await Event.find(filters)
       .sort(sort)
       .skip(skip)
@@ -183,8 +204,11 @@ export const getAllEvents = async (req: Request, res: Response) => {
       .populate('category', 'name')
       .lean();
 
-    // استدعاء الدالة مع plain objects
-    const formattedEvents = formatEventsWithImageUrl(events);
+    // اطبع عدد النتائج المسترجعة
+    console.log(`Found ${events.length} events out of total ${totalEvents}`);
+
+    // قم بتحويل الصور إذا كنت تستخدم دالة formatEventsWithImageUrl
+    const formattedEvents = formatEventsWithImageUrl ? formatEventsWithImageUrl(events) : events;
 
     res.status(200).json({
       total: totalEvents,
@@ -197,6 +221,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 

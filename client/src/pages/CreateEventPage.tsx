@@ -1,12 +1,14 @@
 // src/pages/CreateEventPage.tsx
-import React, { useState } from 'react';
-
+import React, { useState, useEffect } from 'react';
 import {
   Container, TextField, Button, Typography, MenuItem, Box, Paper
 } from '@mui/material';
-import { createEvent } from '../sevices/eventService';  // استدعاء createEvent من service
+
+import { createEvent } from '../sevices/eventService';  // استدعاء دالة إنشاء الفعالية
+import { getAllCategories, type Category } from '../sevices/categoryService';  // استدعاء دالة الفئات
 
 const CreateEventPage: React.FC = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -20,6 +22,18 @@ const CreateEventPage: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const cats = await getAllCategories();
+        setCategories(cats);
+      } catch (err) {
+        console.error('Failed to load categories', err);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,34 +49,26 @@ const CreateEventPage: React.FC = () => {
     setError('');
     setSuccess('');
 
-    try { 
-       
-
-      // جهز البيانات المطلوبة للدالة createEvent من eventService
- await createEvent({
-  title: formData.title,
-  description: formData.description,
-  location: formData.location,
-  date: new Date(formData.date).toISOString(), // ✅ التنسيق الصحيح المطلوب
-  price: formData.price ? parseFloat(formData.price) : undefined,
-  capacity: parseInt(formData.capacity),
-  category: formData.category,
-  image: imageFile,
-});
-
-
-
-
-
-
-
-
-
-
+    try {
+      await createEvent({
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        date: new Date(formData.date).toISOString(),
+        price: formData.price ? parseFloat(formData.price) : undefined,
+        capacity: parseInt(formData.capacity),
+        category: formData.category,
+        image: imageFile,
+      });
       setSuccess('تم إنشاء الفعالية بنجاح!');
       setFormData({
-        title: '', description: '', location: '',
-        date: '', price: '', capacity: '', category: ''
+        title: '',
+        description: '',
+        location: '',
+        date: '',
+        price: '',
+        capacity: '',
+        category: '',
       });
       setImageFile(null);
     } catch (err: any) {
@@ -71,7 +77,7 @@ const CreateEventPage: React.FC = () => {
         setError(msg);
       } else {
         setError('حدث خطأ أثناء إنشاء الفعالية');
-        console.log('Error:', err);
+        console.error(err);
       }
     }
   };
@@ -85,12 +91,37 @@ const CreateEventPage: React.FC = () => {
           <TextField label="العنوان" name="title" fullWidth margin="normal" value={formData.title} onChange={handleChange} required />
           <TextField label="الوصف" name="description" fullWidth margin="normal" multiline minRows={3} value={formData.description} onChange={handleChange} />
           <TextField label="الموقع" name="location" fullWidth margin="normal" value={formData.location} onChange={handleChange} required />
-          <TextField label="التاريخ" name="date" type="datetime-local" fullWidth margin="normal" value={formData.date} onChange={handleChange} required InputLabelProps={{ shrink: true }} />
+          <TextField
+            label="التاريخ"
+            name="date"
+            type="datetime-local"
+            fullWidth
+            margin="normal"
+            value={formData.date}
+            onChange={handleChange}
+            required
+            InputLabelProps={{ shrink: true }}
+          />
           <TextField label="السعر" name="price" type="number" fullWidth margin="normal" value={formData.price} onChange={handleChange} />
           <TextField label="العدد الأقصى" name="capacity" type="number" fullWidth margin="normal" value={formData.capacity} onChange={handleChange} required />
-          <TextField label="الفئة" name="category" fullWidth margin="normal" select value={formData.category} onChange={handleChange}>
-            <MenuItem value="64f0fcd32544ae3554b1d9ab">موسيقى</MenuItem>
-            <MenuItem value="64f0fcd32544ae3554b1d9ac">رياضة</MenuItem>
+
+          <TextField
+            label="الفئة"
+            name="category"
+            fullWidth
+            margin="normal"
+            select
+            value={formData.category}
+            onChange={handleChange}
+            required
+          >
+            {categories.length === 0 ? (
+              <MenuItem disabled>تحميل الفئات...</MenuItem>
+            ) : (
+              categories.map((cat) => (
+                <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
+              ))
+            )}
           </TextField>
 
           <Button variant="contained" component="label" sx={{ mt: 2 }}>

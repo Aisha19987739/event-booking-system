@@ -13,11 +13,16 @@ export interface Event {
   imageUrl: string;
 }
 
+
+
+export const getEventById = async (eventId: string): Promise<Event | null> => {
+  const response = await api.get(`/events/${eventId}`);
+  return response.data || null;
+};
 export const getAllEvents = async (): Promise<Event[]> => {
   const response = await api.get('/events');
   return response.data.events; // ✅ هذه أهم نقطة
 };
-
 
 
 // src/services/eventService.ts

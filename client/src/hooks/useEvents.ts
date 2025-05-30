@@ -1,7 +1,8 @@
 // src/hooks/useEvents.ts
 import { useEffect, useState } from 'react';
-import  {getAllEvents}  from '../sevices/eventService'
+import  {getAllEvents, getEventById}  from '../sevices/eventService'
 import  type { Event } from '../sevices/eventService';
+import { useQuery } from '@tanstack/react-query';
 
 const useEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -24,5 +25,14 @@ const useEvents = () => {
 
   return { events, loading };
 };
+export const useEventbyId = (id: string | undefined) => {
+  return useQuery<Event | null>({
+    queryKey: ['event', id],
+    queryFn: () => getEventById(id!),
+    enabled: !!id,
+    retry: 1,
+  });
+};
+
 
 export default useEvents;

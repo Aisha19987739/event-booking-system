@@ -24,7 +24,9 @@ const router = express.Router();
 router.get('/', getAllEvents);
 
 // جلب فعالية واحدة بالـ ID
-router.get('/:eventId', getEventById);
+// router.get('/:eventId', getEventById);
+router.get('/:id', getEventById);
+
 
 // إنشاء فعالية (منظم فقط)
 router.post(

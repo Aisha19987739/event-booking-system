@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 // السماح لـ frontend على هذا origin فقط
 app.use(cors({
-  origin: 'http://localhost:5174', // ← بدل المنفذ ليتطابق مع منفذ Vite
+  origin: ' http://localhost:5175', // ← بدل المنفذ ليتطابق مع منفذ Vite
   credentials: true,
 }));
 
