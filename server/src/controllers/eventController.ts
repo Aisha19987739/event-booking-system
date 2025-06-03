@@ -15,7 +15,8 @@ import Category from '../models/Category';
 
  export const createEvent = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { title, description, date, location, price, capacity, category } = req.body;
+    const { title, description, date, location, price, capacity, category , latitude,      // أضف هذا
+ longitude} = req.body;
     const organizer = (req as any).user?.userId;
 
     if (!title || !date || !category) {
@@ -57,6 +58,8 @@ import Category from '../models/Category';
       category,
       organizer,
       image: imagePath, // خزن فقط المسار أو اسم الصورة
+       latitude,      // أضف هذا
+      longitude, 
     });
 
     await newEvent.save();
@@ -313,7 +316,8 @@ export const getEventWithBookings = async (req: Request, res: Response): Promise
 export const updateEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, date, location, price, capacity, category } = req.body;
+    const { title, description, date, location, price, capacity, category  ,latitude,      // أضف هذا
+      longitude, } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({ message: "معرف الحدث غير صالح" });
@@ -373,6 +377,9 @@ export const updateEvent = async (req: Request, res: Response) => {
     existingEvent.capacity = capacity ?? existingEvent.capacity;
     existingEvent.category = category || existingEvent.category;
     existingEvent.image = imageUrl;
+    existingEvent.latitude = latitude || existingEvent.latitude; // أضف هذا
+    existingEvent.longitude = longitude || existingEvent.longitude; // أضف هذا
+    // ✅ تحديث الحقول الجديدة
 
     await existingEvent.save();
 

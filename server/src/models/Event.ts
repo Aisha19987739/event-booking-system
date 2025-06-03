@@ -11,6 +11,8 @@ const eventSchema = new mongoose.Schema(
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }],
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: false },
+    latitude: { type: Number },    // أضف هذا
+    longitude: { type: Number }, 
 
     // ✅ الحقل المطلوب لربط Firebase Image URL
    image: { type: String, required: false },

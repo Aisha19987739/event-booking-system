@@ -6,10 +6,6 @@ import dotenv from "dotenv";
 dotenv.config();
 import cors from 'cors';
 
-app.use(cors({
-  origin: 'http://localhost:5175', // ← بدل المنفذ ليتطابق مع منفذ Vite
-  credentials: true,
-}));
 
 
 const PORT = process.env.PORT || 5000;

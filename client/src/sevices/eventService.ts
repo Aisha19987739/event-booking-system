@@ -1,17 +1,25 @@
 // src/services/eventService.ts
 
 import api from './api';
-
 export interface Event {
   _id: string;
   title: string;
-  description?: string;
-  date: string;
+  description: string;
+  date: string; // يمكنك استخدام Date إذا فضلت ذلك
   location: string;
-  price?: number;
+  price: number;
   capacity: number;
-  imageUrl: string;
+  organizer: string; // أو يمكنك ربطه بنوع User لو أردت
+  bookings: string[]; // أو يمكن تغييره حسب تصميمك
+  category: string; // أو object حسب الـ populate في API
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+   latitude?: number;
+  longitude?: number;
+  imageUrl?: string | null;
 }
+
 
 
 
@@ -40,6 +48,8 @@ interface CreateEventData {
   capacity: number; // Frontend uses "capacity", backend expects "totalTickets"
   category: string;
   image?: File | null;
+  latitude?: number;
+  longitude?: number;
 }
 
 
@@ -54,6 +64,8 @@ export const createEvent = (data: CreateEventData) => {
 
   if (data.price) formData.append('price', data.price.toString());
   if (data.image) formData.append('image', data.image);
+  if (data.latitude) formData.append('latitude', data.latitude.toString());
+  if (data.longitude) formData.append('longitude', data.longitude.toString());
 
   return api.post('/events', formData, {
     headers: {
